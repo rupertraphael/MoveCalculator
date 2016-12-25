@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Move Calculator</title>
+
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600 , 300' rel='stylesheet' type='text/css'>
+
+<style type="text/css">
+.it , input[type='text']{
+	font-weight: bold;
+	font-size: 16px;
+	color: #454545;
+}
+
+.warning{
+	color: red;
+	font-weight: 300;
+	text-decoration: underline;
+	font-size: 13.5px;
+}
+
+body{
+	font-family: 'Open Sans' , sans-serif;
+	font-weight: 300;
+	font-size: 13px; 
+}
+
+div, aside, article, section, nav {
+	margin: 0px;
+	padding: 0px;
+}
+
+h1{ 
+	font-family: 'Open Sans' , sans-serif; 
+	font-weight: 400; 
+	margin: 0px;
+	font-size: 40px;
+}
+
+article{
+	margin: 0px;
+	font-size: 16px;
+}
+
+#big_wrapper{
+	display: table;
+	margin: 20px auto;
+	width: 500px;
+	text-align: center;
+}
+#big_wrapper div{
+	text-align: right;
+	margin: 10px auto;
+	display: table;
+}
+
+#big_wrapper div input[type='text']{
+	text-align: right;
+	padding: 3px 5px;
+	width: 290px;
+}
+
+#results table{
+	margin: 0px 0px;
+	text-align: left;
+	display: block;
+}
+</style>
+</head>
+<body>
+	<div id="big_wrapper">
+		<h1>Move Calculator</h1>
+		<article>
+		Measure travel distance and turns precisely for your robot. Support for geared robots coming soon! 
+		</article>
+		<div style="display: table;">
+			<div id="wheelDiameter_container">
+				<input id="i_wheelDiameter" name="wheelDiameter" type="text">
+				<br>
+				<span id="wheelDiameter_label">wheel diameter</span>
+			</div>
+			<div id="wheelCircumference_container">
+				<input id="i_wheelCircumference" name="wheelCircumference" type="text">
+				<br>
+				<span id="wheelCircumference_label">wheel circumference</span>
+			</div>
+			<div id="calculateTurn_container" style="float:left;">
+				<input id="cb_calculateTurn" name="calculateTurn" type="checkbox">
+				<span class="it">Calculate Turns</span>
+			</div>
+			<br>
+			<div id="distance_container">
+				<input id="i_distance" name="distance" type="text">
+				<br>
+				<span id="distance_label">distance</span>
+			</div>
+			<div id="wheelDistance_container">
+				<input id="i_wheelDistance" name="wheelDistance" type="text">
+				<br>
+				<span id="wheelDistance_label">wheel distance</span>
+			</div>
+			<div id="turn_container">
+				<input id="i_turn" name="turn" type="text">
+				<br>
+				<span id="turn_label">turn</span>
+			</div>
+			<hr>
+			<div id="results" class="it" style="float: left; color: black;">
+					<table>
+						<tr>
+							<td><span id="rotations_label">Rotations: </span></td>
+							<td><span id="rotations"></span></td>
+						</tr>
+						<tr>
+							<td><span id="degrees_label">Degrees: </span></td>
+							<td><span id="degrees"></span></td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<div>
+				<span class="warning">Note: All values must come from one unit of measure.</span>
+			</div>
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+	<script src="MoveCalculatorFunctions.js"></script>
+
+	<script type="text/javascript">
+
+	var i_wheelDiameter					=	$('#i_wheelDiameter');
+	var i_wheelCircumference			= 	$('#i_wheelCircumference');
+	var	i_wheelDistance					= 	$('#i_wheelDistance');
+	var i_turn							= 	$('#i_turn');
+	var i_distance						= 	$('#i_distance');
+
+	var rotations = $('#rotations');
+	var degrees = $('#degrees');
+
+	var wheelDiameter = localStorage.wheelDiameter;
+	var wheelDistance = localStorage.wheelDistance;
+	var turn = i_turn.val();
+	var distance = i_distance.val();
+	var wheelCircumference;
+	var r;
+	var d;
+
+	function set_defaultValues(){
+		if(!localStorage.wheelDiameter){
+			localStorage.wheelDiameter = 1;
+		}
+
+		if(!localStorage.wheelDistance){
+			localStorage.wheelDistance = 1;
+		}
+	}
+
+	function updateValues(){
+		wheelDiameter = i_wheelDiameter.val();
+		wheelDistance = i_wheelDistance.val();
+		turn = i_turn.val();
+		distance = i_distance.val();
+	}
+
+	function filter_value(value){
+		if(!value || value == null || value == '' || value == NaN){
+			value = 0;
+		}
+
+		return value;
+	}
+
+	function display_value(input_element , value){
+		value = filter_value(value);
+
+		input_element.val(value);
+		input_element.html(value);
+	}
+
+	function display_wheelDiameter(){
+		display_value(i_wheelDiameter , localStorage.wheelDiameter);
+	}
+
+	function display_wheelCircumference(d){
+		wheelCircumference = getCircumference(d);
+
+		wheelCircumference = filter_value(wheelCircumference);
+
+		display_value(i_wheelCircumference , wheelCircumference);
+	}
+
+	function display_wheelDistance(){
+		display_value(i_wheelDistance , localStorage.wheelDistance);
+	}
+
+	function display_rotations(){
+		r = roundToTwo(getRotations(distance , wheelCircumference));
+
+		r = filter_value(r);
+
+		display_value(rotations , r);
+	}
+
+	function display_turnRotations(){
+		r = roundToTwo(get_turnRotations(turn , getCircumference(localStorage.wheelDistance * 2) , wheelCircumference));
+
+		r = filter_value(r);
+
+		display_value(rotations , r);
+	}
+
+	function display_degrees(){
+		d = roundToTwo(getDegrees(distance , wheelCircumference));
+
+		d = filter_value(d);
+
+		display_value(degrees , d);
+	}
+
+	function display_turnDegrees(){
+		d = roundToTwo(get_turnDegrees(turn , getCircumference(localStorage.wheelDistance * 2) , wheelCircumference));
+
+		d = filter_value(d);
+
+		display_value(degrees , d);
+	}
+
+	function calculate_turns(cb){
+		if(!cb.checked){
+			$('#wheelDistance_container').css('display' , 'none');
+			$('#turn_container').css('visibility' , 'hidden');
+
+			$('#distance_container').css('display' , 'table');
+		}else{
+			$('#wheelDistance_container').css('display' , 'table');
+			$('#turn_container').css('visibility' , 'visible');
+
+			$('#distance_container').css('display' , 'none');
+		}
+	}
+
+	$(document).ready(function(){
+		set_defaultValues();
+
+		calculate_turns($('#cb_calculateTurn'));
+
+		display_wheelDiameter();
+		display_wheelCircumference(wheelDiameter);
+		display_wheelDistance();
+		display_value(i_turn , '');
+		display_value(i_distance , '');
+
+		display_value(rotations , 0);
+		display_value(degrees , 0);
+
+		$('#cb_calculateTurn').on('click' , function(){
+			calculate_turns(this);
+		});
+
+		i_wheelDiameter.on('keyup' , function(){
+			updateValues();
+			display_wheelCircumference(wheelDiameter);
+
+			if(!$('cb_calculateTurn').checked){
+				display_rotations();
+				display_degrees();
+			}else{
+				display_turnRotations();
+				display_turnDegrees();
+			}
+
+			localStorage.wheelDiameter = wheelDiameter;
+		});
+
+		i_wheelDiameter.on('change' , function(){
+			updateValues();
+			display_wheelCircumference(wheelDiameter);
+
+			if(!$('cb_calculateTurn').checked){
+				display_rotations();
+				display_degrees();
+			}else{
+				display_turnRotations();
+				display_turnDegrees();
+			}
+
+			localStorage.wheelDiameter = wheelDiameter;
+		});
+
+		i_wheelCircumference.on('keyup' , function(){
+			var d = getDiameter(i_wheelCircumference.val());
+
+			i_wheelDiameter.val(d).trigger('change');
+		});
+
+		i_distance.on('keyup' , function(){
+			updateValues();
+			display_rotations();
+			display_degrees();
+		});
+
+		i_wheelDistance.on('keyup' , function(){
+			updateValues();
+
+			display_turnRotations();
+			display_turnDegrees();
+
+			localStorage.wheelDistance = wheelDistance;
+		});
+
+		i_turn.on('keyup' , function(){
+			updateValues();
+			display_turnRotations();
+			display_turnDegrees();
+		});
+	});
+	</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" manifest="site.appcache">
+<head>
+<title>Move Calculator</title>
+
+<!--<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600 , 300' rel='stylesheet' type='text/css'>-->
+<link rel="icon" href="img/mc_icon32.png">
+<link rel="apple-touch-icon" href="img/mc_icon152.png">
+<!--IE10 favicon-->
+<meta name="msapplication-TileColor" content="#fdb57e">
+<meta name="msapplication-TileImage" content="img/mc_icon32.png">
+
+<style type="text/css">
+body{
+	font-family: 'Open Sans' , sans-serif;
+	font-weight: 300;
+	font-size: 20px; 
+	text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    /* display: none; <- Crashes Chrome on hover */
+    -webkit-appearance: none;
+    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+div, aside, article, section, nav {
+	margin: 0px;
+	padding: 0px;
+}
+
+h1{ 
+	font-family: 'Open Sans' , sans-serif; 
+	font-weight: bold; 
+	margin: 0px;
+	font-size: 3em;
+}
+
+article{
+	margin: 0px;
+	font-size: 1em;
+}
+
+input[type='checkbox'] {
+    max-width: 3em;
+    max-height: 3em;
+    width: 1.5em;
+    height: 1.5em;
+    min-width: 1em;
+    min-height: 1em;
+    font-size: 1em;
+    padding: 0px;
+    margin-top: .5em;
+    margin-right: .5em;
+}
+
+header *{
+	display: inline;
+}
+
+#big_wrapper{
+	margin: 20px auto;
+	text-align: center;
+	max-width: 80%;
+}
+
+#big_wrapper div{
+	padding: 1em;
+	text-align: right;
+}
+
+#big_wrapper div input[type=number]{
+	text-align: right;
+	padding: 3px 5px;
+	max-width: 40em;
+	max-height: 4em;
+	min-width: 10em;
+	min-height: 1em;
+	font-size: 1.5em;
+	font-weight: bold;
+}
+
+#results{
+	margin: 0px 0px;
+	display: inline-block;
+	font-size: 1.5em;
+	font-weight: bold;
+}
+
+.sim{
+	display: inline-block;
+}
+
+.it{
+	font-weight: bold;
+	font-size: 1em;
+	color: #454545;
+}
+
+.warning{
+	color: red;
+	font-weight: 300;
+	text-decoration: underline;
+	font-size: 1em;
+	text-align: center;
+}
+
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px){
+	body{
+		font-size: 20px;
+	}
+
+	h1{
+		font-size: 4em;
+	}
+
+	#big_wrapper div input[type=number]{
+		font-size: 2.5em;
+	}
+
+	#big_wrapper div span{
+		font-size: 2em;
+	}
+
+	.warning{
+		font-size: 1.5em;
+	}
+}	
+
+
+ @media screen and (-webkit-min-device-pixel-ratio:0) { 
+ select:focus, textarea:focus, input:focus {
+ font-size: 16px;
+ background:#eee;
+  }
+ }
+
+</style>
+</head>
+<body>
+	<div id="big_wrapper">
+		<article>
+			<h1>Move Calculator</h1>
+			<p>
+				Measure travel distance and turns precisely for your robot. Support for gears coming soon!
+			</p>
+		</article>	
+		<div class="sim" id="wheelDiameter_container">
+			<input id="i_wheelDiameter" name="wheelDiameter" type="number" min="0" tabindex="1">
+			<br>
+			<span id="wheelDiameter_label">wheel diameter</span>
+		</div>
+		<div class="sim" id="wheelCircumference_container">
+			<input id="i_wheelCircumference" name="wheelCircumference" type="number" min="0">
+			<br>
+			<span id="wheelCircumference_label">wheel circumference</span>
+		</div>
+		<div id="calculateTurn_container" style="text-align:center;">
+			<input id="cb_calculateTurn" name="calculateTurn" type="checkbox" tabindex="2">
+			<span class="it">
+				<label for="cb_calculateTurn">Calculate Turns</label>
+			</span>
+		</div>
+		<div id="distance_container" style="text-align: center;">
+			<input id="i_distance" name="distance" type="number" min="0" tabindex="3">
+			<br>
+			<span id="distance_label">distance</span>
+		</div>
+		<div id="wheelDistance_container">
+			<input id="i_wheelDistance" name="wheelDistance" type="number" step="any" min="0" tabindex="3">
+			<br>
+			<span id="wheelDistance_label">wheel distance</span>
+		</div>
+		<div id="turn_container">
+			<input id="i_turn" name="turn" type="number" min="0" tabindex="4">
+			<br>
+			<span id="turn_label">turn</span>
+		</div>
+		<hr>
+		<div id="results">
+				<table>
+					<tr>
+						<td><span id="rotations_label">Rotations: </span></td>
+						<td><span id="rotations"></span></td>
+					</tr>
+					<tr>
+						<td><span id="degrees_label">Degrees: </span></td>
+						<td><span id="degrees"></span></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div>
+			<span class="warning">Note: All values must come from one unit of measure.</span>
+		</div>
+	</div>
+
+	<script src="jquery.min.js"></script>
+
+	<script src="MoveCalculatorFunctions.js"></script>
+
+	<script type="text/javascript">
+
+	var i_wheelDiameter					=	$('#i_wheelDiameter');
+	var i_wheelCircumference			= 	$('#i_wheelCircumference');
+	var	i_wheelDistance					= 	$('#i_wheelDistance');
+	var i_turn							= 	$('#i_turn');
+	var i_distance						= 	$('#i_distance');
+
+	var rotations = $('#rotations');
+	var degrees = $('#degrees');
+
+	var wheelDiameter = localStorage.wheelDiameter;
+	var wheelDistance = localStorage.wheelDistance;
+	var turn = i_turn.val();
+	var distance = i_distance.val();
+	var wheelCircumference;
+	var r;
+	var d;
+
+	function set_defaultValues(){
+		if(!localStorage.wheelDiameter){
+			localStorage.wheelDiameter = 1;
+		}
+
+		if(!localStorage.wheelDistance){
+			localStorage.wheelDistance = 1;
+		}
+	}
+
+	function updateValues(){
+		wheelDiameter = i_wheelDiameter.val();
+		wheelDistance = i_wheelDistance.val();
+		turn = i_turn.val();
+		distance = i_distance.val();
+	}
+
+	function filter_value(value){
+		if(!value || value == null || value == '' || value == NaN){
+			value = 0;
+		}
+
+		return value;
+	}
+
+	function display_value(input_element , value){
+		value = filter_value(value);
+
+		input_element.val(value);
+		input_element.html(value);
+	}
+
+	function display_wheelDiameter(){
+		display_value(i_wheelDiameter , localStorage.wheelDiameter);
+	}
+
+	function display_wheelCircumference(d){
+		wheelCircumference = getCircumference(d);
+
+		wheelCircumference = filter_value(wheelCircumference);
+
+		display_value(i_wheelCircumference , wheelCircumference);
+	}
+
+	function display_wheelDistance(){
+		display_value(i_wheelDistance , localStorage.wheelDistance);
+	}
+
+	function display_rotations(){
+		r = roundToTwo(getRotations(distance , wheelCircumference));
+
+		r = filter_value(r);
+
+		display_value(rotations , r);
+	}
+
+	function display_turnRotations(){
+		r = roundToTwo(get_turnRotations(turn , getCircumference(localStorage.wheelDistance * 2) , wheelCircumference));
+
+		r = filter_value(r);
+
+		display_value(rotations , r);
+	}
+
+	function display_degrees(){
+		d = roundToTwo(getDegrees(distance , wheelCircumference));
+
+		d = filter_value(d);
+
+		display_value(degrees , d);
+	}
+
+	function display_turnDegrees(){
+		d = roundToTwo(get_turnDegrees(turn , getCircumference(localStorage.wheelDistance * 2) , wheelCircumference));
+
+		d = filter_value(d);
+
+		display_value(degrees , d);
+	}
+
+	function calculate_turns(cb){
+		if(!cb.checked){
+			$('#wheelDistance_container').css('display' , 'none');
+			$('#turn_container').css('display' , 'none');
+
+			$('#distance_container').css('display' , 'block');
+
+			display_rotations();
+			display_degrees();
+
+		}else{
+			$('#wheelDistance_container').css('display' , 'inline-block');
+			$('#turn_container').css('display' , 'inline-block');
+
+			$('#distance_container').css('display' , 'none');
+
+			display_turnRotations();
+			display_turnDegrees();
+		}
+	}
+
+	$(document).ready(function(){
+		set_defaultValues();
+
+		calculate_turns($('#cb_calculateTurn'));
+
+		$(':input[type="number"]').click(function(){
+			this.setSelectionRange(0, this.value.length);
+		});
+
+		display_wheelDiameter();
+		display_wheelCircumference(localStorage.wheelDiameter);
+		display_wheelDistance();
+		display_value(i_turn , '');
+		display_value(i_distance , '');
+
+		display_value(rotations , 0);
+		display_value(degrees , 0);
+
+		$('#cb_calculateTurn').on('click' , function(){
+			calculate_turns(this);
+		});
+
+		i_wheelDiameter.on('focus' , function(){
+			i_wheelDiameter.on('keyup' , function(){
+				updateValues();
+				display_wheelCircumference(wheelDiameter);
+
+				if(!$('#cb_calculateTurn').is(':checked')){
+					display_rotations();
+					display_degrees();
+				}else{
+					display_turnRotations();
+					display_turnDegrees();
+				}
+
+				localStorage.wheelDiameter = wheelDiameter;
+			});
+
+			i_wheelDiameter.on('change' , function(){
+				updateValues();
+				display_wheelCircumference(wheelDiameter);
+
+				if(!$('#cb_calculateTurn').is(':checked')){
+					display_rotations();
+					display_degrees();
+				}else{
+					display_turnRotations();
+					display_turnDegrees();
+				}
+
+				localStorage.wheelDiameter = wheelDiameter;
+			});
+		});
+
+		i_wheelCircumference.on('focus' , function(){
+			i_wheelCircumference.on('keyup' , function(){
+
+				wheelCircumference = i_wheelCircumference.val();
+				var d = getDiameter(i_wheelCircumference.val());
+
+				updateValues();
+				wheelDiameter = d;
+				localStorage.wheelDiameter = wheelDiameter;
+				display_wheelDiameter();
+
+				if(!$('#cb_calculateTurn').is(':checked')){
+					display_rotations();
+					display_degrees();
+				}else{
+					display_turnRotations();
+					display_turnDegrees();
+				}
+			});
+
+			i_wheelCircumference.on('change' , function(){
+
+				wheelCircumference = i_wheelCircumference.val();
+				var d = getDiameter(i_wheelCircumference.val());
+
+				updateValues();
+				wheelDiameter = d;
+				localStorage.wheelDiameter = wheelDiameter;
+				display_wheelDiameter();
+
+				if(!$('#cb_calculateTurn').is(':checked')){
+					display_rotations();
+					display_degrees();
+				}else{
+					display_turnRotations();
+					display_turnDegrees();
+				}
+			});
+		});
+
+		i_distance.on('focus' , function(){
+			i_distance.on('keyup' , function(){
+				updateValues();
+				display_rotations();
+				display_degrees();
+			});
+
+			i_distance.on('change' , function(){
+				updateValues();
+				display_rotations();
+				display_degrees();
+			});
+		});
+
+		i_wheelDistance.on('focus' , function(){
+			i_wheelDistance.on('keyup' , function(){
+				updateValues();
+
+				display_turnRotations();
+				display_turnDegrees();
+
+				localStorage.wheelDistance = wheelDistance;
+			});
+
+			i_wheelDistance.on('change' , function(){
+				updateValues();
+
+				display_turnRotations();
+				display_turnDegrees();
+
+				localStorage.wheelDistance = wheelDistance;
+			});
+		});
+
+		i_turn.on('focus' , function(){
+			i_turn.on('keyup' , function(){
+				updateValues();
+				display_turnRotations();
+				display_turnDegrees();
+			});
+
+			i_turn.on('change' , function(){
+				updateValues();
+				display_turnRotations();
+				display_turnDegrees();
+			});
+		});
+	});
+	</script>
+</body>
+</html>
